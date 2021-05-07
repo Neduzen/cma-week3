@@ -132,7 +132,6 @@ figure <- ggarrange(trajID1, trajID2, trajID3, trajID4, trajID5, trajID6,
                     labels = c("1", "2", "3", "4", "5", "6"),
                     ncol = 3, nrow = 3) 
 annotate_figure(figure, top = text_grob("Visual comparison of six trajectories, each highlighted by a color", color = "black", face = "bold", size = 12))
-figure
 ```
 
 ```{r}
@@ -203,6 +202,7 @@ figure <- ggarrange(plcss, pdtw, pfr, pedit,
                     ncol = 2, nrow = 2) 
 figure
 ```
+
 LCSS: The LCSS defines how many points of the second trajectory are matching to the points of the first 1 with taking into account a threshold. Trajectory 1 has a value of 47, which means all points match to trajectory 1.
 The higher the value the more similar the trajectories.
 Trajectory 3 has a low LCSS of around 2, which means trajectory 1 and 3 are not similar.
