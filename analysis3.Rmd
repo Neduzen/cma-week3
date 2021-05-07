@@ -1,0 +1,75 @@
+---
+title: "analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+## Load the necessary libraries ################################################
+
+library(readr)        # to import tabular data (e.g. csv)
+library(dplyr)        # to manipulate (tabular) data
+library(ggplot2)      # to visualize data
+library(sf)           # to handle spatial vector data
+
+## Import the downloaded csv ##################################################
+
+wildschwein <- read_delim("caro60.csv",",") 
+wildschwein <- st_as_sf(caro, coords = c("E", "N"), crs = 2056, remove = FALSE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+# Calculate distance of previous and post points
+wildschwein <- wildschwein %>%
+  mutate(
+    nMinus3 = sqrt((lag(E,3)-E)^2+(lag(N,3)-N)^2),   # distance to pos -3 minutes
+    nMinus2 = sqrt((lag(E,2)-E)^2+(lag(N,2)-N)^2),   # distance to pos -2 minutes
+    nMinus1 = sqrt((lag(E,1)-E)^2+(lag(N,1)-N)^2),   # distance to pos -1 minutes
+    nPlus1  = sqrt((E-lead(E,1))^2+(N-lead(N,1))^2), # distance to pos +1 mintues
+    nPlus2  = sqrt((E-lead(E,2))^2+(N-lead(N,2))^2),  # distance to pos +2 minutes
+    nPlus3  = sqrt((E-lead(E,3))^2+(N-lead(N,3))^2)  # distance to pos +3 minutes
+  )
+# Get mean distance
+wildschwein <- wildschwein %>%
+  rowwise() %>%
+  mutate(
+    stepMean = mean(c(nMinus3, nMinus2, nMinus1,nPlus1,nPlus2, nPlus3))
+  ) %>%
+  ungroup() 
+# Calculate step mean
+wildschwein <- wildschwein %>% 
+  ungroup() %>%
+  mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+# Filter short ones
+wildschwein <- wildschwein %>%
+  filter(!static)
+# Plot
+wildschwein %>%
+  ggplot(aes(E, N))  +
+  geom_path() +
+  geom_point() +
+  coord_fixed() +
+  theme(legend.position = "bottom")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+vTemp <- 5 #5min
+i = 1
+for (i in length(wildschwein$TierID)) {
+  time <- wildschwein[i,]$DatetimeUTC
+  closePoints <- wildschwein %>% filter(as.numeric(difftime(DatetimeUTC, time, "mins")) < vTemp)
+  closePoints <- closePoints %>% mutate(distance = dist(geometry, wildschwein[i,]$geometry))
+  wildschwein[i,]$meanDist <- closePoints
+}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
